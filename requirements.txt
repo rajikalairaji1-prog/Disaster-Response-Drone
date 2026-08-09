@@ -1,0 +1,9 @@
+# Core Game Engine & Visualization
+pygame==2.6.0
+matplotlib==3.9.0
+
+# Numerical Operations & Matrix Math
+numpy==1.26.4
+
+# Deep Reinforcement Learning Framework (Module 1 AI)
+torch==2.3.1
