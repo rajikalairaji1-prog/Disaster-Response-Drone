@@ -1,21 +1,17 @@
 # config.py
+"""
+Central configuration settings for the 3D Disaster Response Drone.
+"""
 
-# Grid & World Parameters
-GRID_WIDTH = 20
-GRID_HEIGHT = 20
-CELL_SIZE = 30  # Pygame pixel dimensions per cell
-NUM_DRONES = 3
-NUM_SURVIVORS = 5
-NUM_OBSTACLES = 15
+# 3D Grid World Dimensions (X = Width, Y = Length, Z = Altitude)
+GRID_X: int = 10  # East-West axis
+GRID_Y: int = 10  # North-South axis
+GRID_Z: int = 5   # Height / Altitude layers
 
-# Drone Capabilities
-INITIAL_BATTERY = 100.0
-BATTERY_DRAIN_PER_STEP = 0.5
+# Drone Constraints
+MAX_STEPS_PER_EPISODE: int = 100
+INITIAL_BATTERY: int = 100
 
-# Reinforcement Learning Hyperparameters
-LEARNING_RATE = 0.1
-DISCOUNT_FACTOR = 0.95
-EPSILON_START = 1.0
-EPSILON_MIN = 0.05
-EPSILON_DECAY = 0.995
-NUM_EPISODES = 1000
+# Start & Goal Locations (x, y, z)
+START_POSITION: tuple = (0, 0, 0)
+SURVIVOR_POSITION: tuple = (8, 8, 2)
