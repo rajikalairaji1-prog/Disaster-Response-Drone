@@ -1,127 +1,181 @@
 # main.py
-import time
+import random
 import pygame
 import numpy as np
 
-# Import shared settings and contracts
-from config import GRID_X, GRID_Y, GRID_Z, FPS
-from interfaces import Position3D, TelemetryData
+# Config & Contracts
+from config import (
+    GRID_X, GRID_Y, GRID_Z, 
+    NUM_DRONES, INITIAL_BATTERY, BATTERY_DRAIN_PER_STEP,
+    MAX_STEPS_PER_EPISODE, START_POSITION, SURVIVOR_POSITION, 
+    FPS
+)
+from interfaces import Action3D, Position3D, AgentState, TelemetryData
 
-# Import Team Modules
-from module_1.random_walk import RandomWalkAgent3D      # Member 1 (YOU)
-from module_2.grid import Grid                              # Member 2
-from module_3.pygame_renderer import SwarmDashboard3D       # Member 3
+# Team Modules
+from module_2.grid import Grid
+from module_3.pygame_renderer import SwarmDashboard3D
+
+
+def apply_action(pos: Position3D, action: Action3D) -> Position3D:
+    """Calculates the target position given an Action3D move."""
+    dx, dy, dz = 0, 0, 0
+
+    if action == Action3D.RIGHT:
+        dx = 1  # +X
+    elif action == Action3D.LEFT:
+        dx = -1  # -X
+    elif action == Action3D.FORWARD:
+        dy = 1  # +Y
+    elif action == Action3D.BACKWARD:
+        dy = -1  # -Y
+    elif action == Action3D.ASCEND:
+        dz = 1  # +Z
+    elif action == Action3D.DESCEND:
+        dz = -1  # -Z
+
+    new_x = max(0, min(GRID_X - 1, pos.x + dx))
+    new_y = max(0, min(GRID_Y - 1, pos.y + dy))
+    new_z = max(0, min(GRID_Z - 1, pos.z + dz))
+
+    return Position3D(new_x, new_y, new_z)
 
 
 def run_simulation():
     # ----------------------------------------------------
-    # 1. INITIALIZE ENVIRONMENT (Member 2)
+    # 1. ENVIRONMENT SETUP (Member 2 Grid -> 3D Space)
     # ----------------------------------------------------
-    env_grid = Grid(size=GRID_X)
+    env_2d = Grid(size=GRID_X)  # 10x10 Grid from config
 
-    # Place obstacles on the ground layer
-    env_grid.add_obstacle(5, 5)
-    env_grid.add_obstacle(5, 6)
-    env_grid.add_obstacle(6, 5)
-    env_grid.add_obstacle(12, 8)
-    env_grid.add_obstacle(12, 9)
+    # Add ground obstacles from Member 2's style
+    env_2d.add_obstacle(3, 3)
+    env_2d.add_obstacle(3, 4)
+    env_2d.add_obstacle(4, 3)
 
-    # Place survivors on the ground layer
-    env_grid.add_survivor(10, 10)
-    env_grid.add_survivor(15, 15)
-    total_survivors = 2
-
-    # Translate Member 2's 2D Grid into Member 3's 3D Matrix (Z=0 Ground Level)
+    # Convert 2D Grid to 3D matrix for Member 3's UI
     grid_3d = np.zeros((GRID_X, GRID_Y, GRID_Z), dtype=int)
-    for r in range(GRID_X):
-        for c in range(GRID_Y):
-            grid_3d[r, c, 0] = env_grid.grid[r][c]
+
+    # Populate Z=0 Ground level obstacles from Member 2's Grid
+    for x in range(GRID_X):
+        for y in range(GRID_Y):
+            grid_3d[x, y, 0] = env_2d.grid[x][y]
+
+    # Place Survivor defined in config.py (e.g., at x=8, y=8, z=2)
+    surv_x, surv_y, surv_z = SURVIVOR_POSITION
+    grid_3d[surv_x, surv_y, surv_z] = 2
 
     visit_count_3d = np.zeros((GRID_X, GRID_Y, GRID_Z), dtype=int)
 
     # ----------------------------------------------------
-    # 2. INITIALIZE AI DRONE SWARM (Member 1 - YOU)
+    # 2. DRONE SWARM INITIALIZATION (Member 1 AI Agents)
     # ----------------------------------------------------
-    # Create 3 Drones starting at different locations and altitudes
+    start_pos = Position3D(*START_POSITION)
+
+    # 3 Drones starting near base position at different altitudes
     drones = [
-        {"agent": RandomWalkAgent3D(start_pos=(0, 0, 1)), "pos": Position3D(0, 0, 1), "battery": 100.0},
-        {"agent": RandomWalkAgent3D(start_pos=(0, 19, 2)), "pos": Position3D(0, 19, 2), "battery": 95.0},
-        {"agent": RandomWalkAgent3D(start_pos=(19, 0, 3)), "pos": Position3D(19, 0, 3), "battery": 90.0},
+        AgentState(
+            position=Position3D(start_pos.x, start_pos.y, 1),
+            battery=INITIAL_BATTERY,
+        ),
+        AgentState(
+            position=Position3D(start_pos.x + 1, start_pos.y, 2),
+            battery=INITIAL_BATTERY,
+        ),
+        AgentState(
+            position=Position3D(start_pos.x, start_pos.y + 1, 3),
+            battery=INITIAL_BATTERY,
+        ),
     ]
 
     # ----------------------------------------------------
-    # 3. INITIALIZE 3D DASHBOARD UI (Member 3)
+    # 3. UI DASHBOARD (Member 3 Renderer)
     # ----------------------------------------------------
     dashboard = SwarmDashboard3D()
     clock = pygame.time.Clock()
 
-    survivors_found_set = set()
+    survivors_found = 0
+    total_survivors = 1
     step_number = 0
     running = True
 
-    print("🚀 Launching 3D Swarm Simulation...")
+    print(
+        f"🚀 Simulation active with 3D Grid size ({GRID_X}x{GRID_Y}x{GRID_Z})..."
+    )
 
     # ----------------------------------------------------
-    # 4. MAIN GAME LOOP
+    # 4. SIMULATION LOOP
     # ----------------------------------------------------
-    while running:
-        # --- Handle Pygame Window Events ---
+    while running and step_number < MAX_STEPS_PER_EPISODE:
+        # Handle Pygame UI Events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_h:
-                    dashboard.toggle_heatmap()  # Press 'H' to toggle heatmap!
+                    dashboard.toggle_heatmap()
 
         step_number += 1
-        current_drone_positions = []
-        current_drone_batteries = []
+        actions = list(Action3D)
 
-        # --- Update Each Drone (AI Step -> Env Step) ---
-        for drone in drones:
-            # 1. AI Decision (You)
-            action = drone["agent"].get_action()
+        current_positions = []
+        current_batteries = []
 
-            # 2. Update Position
-            new_pos = drone["agent"].predict_next_position(drone["pos"], action)
-            drone["pos"] = new_pos
+        # Update each drone state
+        for idx, drone in enumerate(drones):
+            if drone.battery <= 0:
+                current_positions.append(drone.position)
+                current_batteries.append(0)
+                continue
 
-            # 3. Drain battery slightly per move
-            drone["battery"] = max(0.0, drone["battery"] - 0.2)
+            # 1. Choose action (Random movement policy for demonstration)
+            chosen_action = random.choice(actions)
 
-            # Record position & visits
-            current_drone_positions.append(drone["pos"])
-            current_drone_batteries.append(drone["battery"])
-            visit_count_3d[drone["pos"].x, drone["pos"].y, drone["pos"].z] += 1
+            # 2. Calculate next move
+            next_pos = apply_action(drone.position, chosen_action)
 
-            # Check if drone found a survivor at ground level (Z=0 or directly hovering above)
-            if env_grid.is_survivor(drone["pos"].x, drone["pos"].y):
-                survivors_found_set.add((drone["pos"].x, drone["pos"].y))
+            # 3. Update drone state & drain battery
+            drone.position = next_pos
+            drone.battery = max(0, drone.battery - 1)
 
-        # --- Calculate Telemetry Metrics ---
-        visited_ground_cells = np.count_nonzero(np.sum(visit_count_3d, axis=2))
-        coverage_pct = (visited_ground_cells / (GRID_X * GRID_Y)) * 100.0
+            # 4. Check survivor discovery match
+            if (
+                drone.position.x == surv_x
+                and drone.position.y == surv_y
+                and drone.position.z == surv_z
+            ):
+                drone.has_found_survivor = True
+                survivors_found = 1
 
-        # --- Package Telemetry for Member 3's Dashboard ---
+            # Log step in heat-map
+            visit_count_3d[next_pos.x, next_pos.y, next_pos.z] += 1
+
+            current_positions.append(drone.position)
+            current_batteries.append(float(drone.battery))
+
+        # Calculate visited coverage percentage across ground level
+        visited_cells = np.count_nonzero(np.sum(visit_count_3d, axis=2))
+        coverage_pct = (visited_cells / (GRID_X * GRID_Y)) * 100.0
+
+        # Construct Telemetry Payload for UI
         telemetry = TelemetryData(
             grid_matrix=grid_3d,
             visit_count_matrix=visit_count_3d,
-            drone_positions=current_drone_positions,
-            drone_batteries=current_drone_batteries,
-            active_paradigm="3D Random Walk Swarm",
+            drone_positions=current_positions,
+            drone_batteries=current_batteries,
+            active_paradigm="3D Random Explorer",
             step_number=step_number,
             coverage_percentage=coverage_pct,
-            survivors_found=len(survivors_found_set),
-            total_survivors=total_survivors
+            survivors_found=survivors_found,
+            total_survivors=total_survivors,
         )
 
-        # --- Render 3D Isometric Frame ---
+        # Render dashboard frame
         dashboard.render_frame(telemetry)
-        clock.tick(FPS)
+        clock.tick(8)  # 8 FPS execution speed
 
     pygame.quit()
-    print("✅ Simulation ended cleanly.")
+    print("✅ Run completed.")
 
 
 if __name__ == "__main__":
-    run_simulation()
+    run_simulation()    
