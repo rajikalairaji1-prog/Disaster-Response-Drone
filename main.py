@@ -8,7 +8,7 @@ from config import GRID_X, GRID_Y, GRID_Z, FPS
 from interfaces import Position3D, TelemetryData
 
 # Import Team Modules
-from module_1_ai.random_walk import RandomWalkAgent3D      # Member 1 (YOU)
+from module_1.random_walk import RandomWalkAgent3D      # Member 1 (YOU)
 from module_2.grid import Grid                              # Member 2
 from module_3.pygame_renderer import SwarmDashboard3D       # Member 3
 
