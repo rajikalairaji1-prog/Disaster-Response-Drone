@@ -1,7 +1,7 @@
 # main.py
 import time
 from interfaces import Position3D, AgentState
-from module_1_ai.random_walk import RandomWalkAgent3D
+from module_1.random_walk import RandomWalkAgent3D
 
 def test_3d_random_walk():
     agent = RandomWalkAgent3D(start_pos=(0, 0, 0))
