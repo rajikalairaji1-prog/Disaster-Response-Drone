@@ -3,17 +3,23 @@ from grid import Grid
 
 class DisasterScenario:
     """
-    Creates different disaster scenarios for testing
-    drone search algorithms.
+    Creates different 3D disaster scenarios
+    for testing drone search algorithms.
 
-    Grid values:
+    Coordinate system:
+        X = Left / Right
+        Y = Forward / Backward
+        Z = Altitude
+
+    Cell values:
         0 = Empty
         1 = Obstacle
         2 = Survivor
     """
 
-    def __init__(self, grid_size=20):
+    def __init__(self, grid_size=20, height=10):
         self.grid_size = grid_size
+        self.height = height
 
     # --------------------------------------------------
     # SCENARIO 1: SIMPLE
@@ -22,21 +28,28 @@ class DisasterScenario:
     def simple_scenario(self):
         """
         Small number of obstacles and survivors.
-        Useful for basic testing.
+        Useful for basic 3D testing.
         """
 
-        grid = Grid(self.grid_size)
+        grid = Grid(
+            size=self.grid_size,
+            height=self.height
+        )
 
+        # Obstacles: (x, y, z)
         obstacles = [
-            (5, 5),
-            (5, 6),
-            (6, 5)
+            (5, 5, 1),
+            (5, 6, 1),
+            (6, 5, 1),
+            (8, 8, 2),
+            (8, 9, 2)
         ]
 
+        # Survivors: (x, y, z)
         survivors = [
-            (2, 2),
-            (10, 10),
-            (15, 15)
+            (2, 2, 0),
+            (10, 10, 1),
+            (15, 15, 2)
         ]
 
         self.add_obstacles(grid, obstacles)
@@ -50,46 +63,55 @@ class DisasterScenario:
 
     def obstacle_heavy_scenario(self):
         """
-        Large number of obstacles.
-        Tests the drone's ability to avoid obstacles.
+        Large number of obstacles distributed
+        across different altitude levels.
         """
 
-        grid = Grid(self.grid_size)
+        grid = Grid(
+            size=self.grid_size,
+            height=self.height
+        )
 
         obstacles = [
-            # Horizontal wall
-            (5, 3),
-            (5, 4),
-            (5, 5),
-            (5, 6),
-            (5, 7),
 
-            # Second wall
-            (10, 10),
-            (10, 11),
-            (10, 12),
-            (10, 13),
-            (10, 14),
+            # Ground-level wall
+            (5, 3, 0),
+            (5, 4, 0),
+            (5, 5, 0),
+            (5, 6, 0),
+            (5, 7, 0),
 
-            # Vertical wall
-            (7, 12),
-            (8, 12),
-            (9, 12),
-            (10, 12),
-            (11, 12),
-            (12, 12),
+            # Second-level wall
+            (10, 10, 1),
+            (10, 11, 1),
+            (10, 12, 1),
+            (10, 13, 1),
+            (10, 14, 1),
 
-            # Additional obstacles
-            (14, 5),
-            (14, 6),
-            (15, 5),
-            (15, 6)
+            # Vertical structure
+            (7, 12, 0),
+            (8, 12, 0),
+            (9, 12, 0),
+            (10, 12, 0),
+            (11, 12, 0),
+            (12, 12, 0),
+
+            # Higher altitude obstacles
+            (14, 5, 2),
+            (14, 6, 2),
+            (15, 5, 2),
+            (15, 6, 2),
+
+            # High-level obstacles
+            (16, 10, 3),
+            (16, 11, 3),
+            (17, 10, 3)
         ]
 
         survivors = [
-            (3, 3),
-            (12, 15),
-            (17, 17)
+            (3, 3, 0),
+            (12, 15, 1),
+            (17, 17, 2)
         ]
 
         self.add_obstacles(grid, obstacles)
@@ -103,30 +125,37 @@ class DisasterScenario:
 
     def survivor_dense_scenario(self):
         """
-        More survivors with fewer obstacles.
-        Tests survivor detection efficiency.
+        More survivors distributed across
+        different 3D positions.
         """
 
-        grid = Grid(self.grid_size)
+        grid = Grid(
+            size=self.grid_size,
+            height=self.height
+        )
 
         obstacles = [
-            (7, 7),
-            (7, 8),
-            (8, 7),
-            (12, 12),
-            (12, 13)
+            (7, 7, 0),
+            (7, 8, 0),
+            (8, 7, 0),
+
+            (12, 12, 1),
+            (12, 13, 1),
+
+            (15, 15, 2),
+            (15, 16, 2)
         ]
 
         survivors = [
-            (2, 2),
-            (3, 8),
-            (5, 15),
-            (8, 3),
-            (10, 10),
-            (12, 17),
-            (15, 5),
-            (16, 12),
-            (18, 18)
+            (2, 2, 0),
+            (3, 8, 0),
+            (5, 15, 1),
+            (8, 3, 1),
+            (10, 10, 1),
+            (12, 17, 2),
+            (15, 5, 2),
+            (16, 12, 3),
+            (18, 18, 3)
         ]
 
         self.add_obstacles(grid, obstacles)
@@ -135,40 +164,53 @@ class DisasterScenario:
         return grid
 
     # --------------------------------------------------
-    # SCENARIO 4: MAZE
+    # SCENARIO 4: 3D MAZE
     # --------------------------------------------------
 
     def maze_scenario(self):
         """
-        Maze-like obstacle arrangement.
+        3D maze-like obstacle arrangement.
         Tests path planning and obstacle avoidance.
         """
 
-        grid = Grid(self.grid_size)
+        grid = Grid(
+            size=self.grid_size,
+            height=self.height
+        )
 
         obstacles = []
 
-        # Vertical walls
-        for row in range(2, 8):
-            obstacles.append((row, 4))
+        # X-Y walls at different Z levels
 
-        for row in range(10, 17):
-            obstacles.append((row, 8))
+        # Wall at altitude 0
+        for y in range(2, 8):
+            obstacles.append((4, y, 0))
 
-        for row in range(3, 10):
-            obstacles.append((row, 13))
+        # Wall at altitude 1
+        for y in range(10, 17):
+            obstacles.append((8, y, 1))
 
-        # Horizontal walls
-        for col in range(4, 10):
-            obstacles.append((8, col))
+        # Wall at altitude 2
+        for y in range(3, 10):
+            obstacles.append((13, y, 2))
 
-        for col in range(10, 17):
-            obstacles.append((17, col))
+        # Horizontal wall at altitude 0
+        for x in range(4, 10):
+            obstacles.append((x, 8, 0))
+
+        # Horizontal wall at altitude 1
+        for x in range(10, 17):
+            obstacles.append((x, 17, 1))
+
+        # Additional upper-level wall
+        for x in range(5, 12):
+            obstacles.append((x, 12, 3))
 
         survivors = [
-            (3, 2),
-            (9, 10),
-            (15, 15)
+            (3, 2, 0),
+            (9, 10, 1),
+            (15, 15, 2),
+            (18, 18, 3)
         ]
 
         self.add_obstacles(grid, obstacles)
@@ -177,40 +219,47 @@ class DisasterScenario:
         return grid
 
     # --------------------------------------------------
-    # RANDOM-LIKE SCENARIO
+    # SCENARIO 5: RANDOM-LIKE
     # --------------------------------------------------
 
     def random_scenario(self):
         """
-        Creates a larger mixed disaster environment.
+        Creates a mixed 3D disaster environment.
         """
 
-        grid = Grid(self.grid_size)
+        grid = Grid(
+            size=self.grid_size,
+            height=self.height
+        )
 
         obstacles = [
-            (2, 5),
-            (2, 6),
-            (3, 5),
-            (6, 10),
-            (7, 10),
-            (8, 10),
-            (10, 4),
-            (10, 5),
-            (11, 5),
-            (13, 14),
-            (14, 14),
-            (15, 14),
-            (16, 7),
-            (16, 8),
-            (17, 8)
+            (2, 5, 0),
+            (2, 6, 0),
+            (3, 5, 0),
+
+            (6, 10, 1),
+            (7, 10, 1),
+            (8, 10, 1),
+
+            (10, 4, 2),
+            (10, 5, 2),
+            (11, 5, 2),
+
+            (13, 14, 1),
+            (14, 14, 1),
+            (15, 14, 1),
+
+            (16, 7, 3),
+            (16, 8, 3),
+            (17, 8, 3)
         ]
 
         survivors = [
-            (1, 15),
-            (6, 3),
-            (9, 17),
-            (13, 5),
-            (18, 18)
+            (1, 15, 0),
+            (6, 3, 1),
+            (9, 17, 2),
+            (13, 5, 2),
+            (18, 18, 3)
         ]
 
         self.add_obstacles(grid, obstacles)
@@ -224,13 +273,13 @@ class DisasterScenario:
 
     def add_obstacles(self, grid, obstacles):
         """
-        Add obstacles to the grid.
+        Add 3D obstacles to the grid.
         """
 
-        for row, col in obstacles:
+        for x, y, z in obstacles:
 
-            if grid.is_valid_position(row, col):
-                grid.add_obstacle(row, col)
+            if grid.is_valid_position(x, y, z):
+                grid.add_obstacle(x, y, z)
 
     # --------------------------------------------------
     # ADD SURVIVORS
@@ -238,16 +287,16 @@ class DisasterScenario:
 
     def add_survivors(self, grid, survivors):
         """
-        Add survivors to the grid.
+        Add survivors to the 3D grid.
         """
 
-        for row, col in survivors:
+        for x, y, z in survivors:
 
-            if grid.is_valid_position(row, col):
+            if grid.is_valid_position(x, y, z):
 
                 # Do not place survivor on obstacle
-                if not grid.is_obstacle(row, col):
-                    grid.add_survivor(row, col)
+                if not grid.is_obstacle(x, y, z):
+                    grid.add_survivor(x, y, z)
 
     # --------------------------------------------------
     # DISPLAY SCENARIO
@@ -255,29 +304,33 @@ class DisasterScenario:
 
     def display(self, grid, name):
         """
-        Display a scenario.
+        Display each altitude layer of the 3D scenario.
         """
 
         print("\n========================================")
-        print("SCENARIO:", name)
+        print("3D SCENARIO:", name)
         print("========================================")
 
-        for row in range(self.grid_size):
+        for z in range(self.height):
 
-            row_data = []
+            print(f"\n--- ALTITUDE Z = {z} ---")
 
-            for col in range(self.grid_size):
+            for y in range(self.grid_size):
 
-                if grid.is_obstacle(row, col):
-                    row_data.append("X")
+                row_data = []
 
-                elif grid.is_survivor(row, col):
-                    row_data.append("S")
+                for x in range(self.grid_size):
 
-                else:
-                    row_data.append(".")
+                    if grid.is_obstacle(x, y, z):
+                        row_data.append("X")
 
-            print(" ".join(row_data))
+                    elif grid.is_survivor(x, y, z):
+                        row_data.append("S")
+
+                    else:
+                        row_data.append(".")
+
+                print(" ".join(row_data))
 
 
 # ======================================================
@@ -287,42 +340,45 @@ class DisasterScenario:
 if __name__ == "__main__":
 
     print("========================================")
-    print("     DISASTER SCENARIO TEST")
+    print("     3D DISASTER SCENARIO TEST")
     print("========================================")
 
-    scenarios = DisasterScenario(20)
+    scenarios = DisasterScenario(
+        grid_size=20,
+        height=5
+    )
 
     # ------------------------------------------
-    # Test Simple Scenario
+    # Simple Scenario
     # ------------------------------------------
 
     grid = scenarios.simple_scenario()
 
     scenarios.display(
         grid,
-        "Simple Disaster Scenario"
+        "Simple 3D Disaster Scenario"
     )
 
     # ------------------------------------------
-    # Test Obstacle Heavy Scenario
+    # Obstacle Heavy Scenario
     # ------------------------------------------
 
     grid = scenarios.obstacle_heavy_scenario()
 
     scenarios.display(
         grid,
-        "Obstacle Heavy Scenario"
+        "3D Obstacle Heavy Scenario"
     )
 
     # ------------------------------------------
-    # Test Survivor Dense Scenario
+    # Survivor Dense Scenario
     # ------------------------------------------
 
     grid = scenarios.survivor_dense_scenario()
 
     scenarios.display(
         grid,
-        "Survivor Dense Scenario"
+        "3D Survivor Dense Scenario"
     )
 
-    print("\nAll scenarios created successfully!")
+    print("\nAll 3D scenarios created successfully!")
